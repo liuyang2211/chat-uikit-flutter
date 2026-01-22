@@ -53,6 +53,7 @@ class WKHttpUtils {
     WKHttpUtils.uid = uid;
     WKHttpUtils.token = token;
     try {
+      print('请求 wukogn Login uid: $uid, token: $token');
       final response = await dio.post("/user/token", data: {
         'uid': uid,
         'token': token,

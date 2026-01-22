@@ -320,28 +320,29 @@ class CoreServicesImpl implements CoreServices {
       {required String uid, required String token}) async {
     _wkUid = uid;
     _wkToken = token;
-    var status = await WKHttpUtils.login(uid, token);
-    if (status == HttpStatus.ok) {
-      // MARK: 初始化IM
-      WKIMUtils.initIM(uid, token).then((result) {
-        if (result) {
-          if (!PlatformUtils().isWeb) {
-            wkDidLoginSuccess();
-          }
-        } else {
-          callOnCallback(TIMCallback(
-              type: TIMCallbackType.API_ERROR,
-              errorCode: 900001,
-              errorMsg: 'TUIKit WKIM SDK 初始化失败'));
+    // 这个登录没有意义，因此注掉
+    // var status = await WKHttpUtils.login(uid, token);
+    // if (status == HttpStatus.ok) {
+    // MARK: 初始化IM
+    WKIMUtils.initIM(uid, token).then((result) {
+      if (result) {
+        if (!PlatformUtils().isWeb) {
+          wkDidLoginSuccess();
         }
-      });
-    } else {
-      print('登录失败 $status');
-      callOnCallback(TIMCallback(
-          type: TIMCallbackType.API_ERROR,
-          errorCode: 900000,
-          errorMsg: 'TUIKit WKIM SDK 登录失败'));
-    }
+      } else {
+        callOnCallback(TIMCallback(
+            type: TIMCallbackType.API_ERROR,
+            errorCode: 900001,
+            errorMsg: 'TUIKit WKIM SDK 初始化失败'));
+      }
+    });
+    // } else {
+    //   print('登录失败 $status');
+    //   callOnCallback(TIMCallback(
+    //       type: TIMCallbackType.API_ERROR,
+    //       errorCode: 900000,
+    //       errorMsg: 'TUIKit WKIM SDK 登录失败'));
+    // }
 
     return V2TimCallback(code: 0, desc: 'success');
   }
