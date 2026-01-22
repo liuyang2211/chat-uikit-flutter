@@ -1,7 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:tencent_chat_i18n_tool/tencent_chat_i18n_tool.dart';
-import 'package:tencent_cloud_chat_sdk/models/v2_tim_conversation.dart'
-    if (dart.library.html) 'package:tencent_cloud_chat_sdk/web/compatible_models/v2_tim_conversation.dart';
 import 'package:tencent_cloud_chat_sdk/models/v2_tim_friend_info.dart'
     if (dart.library.html) 'package:tencent_cloud_chat_sdk/web/compatible_models/v2_tim_friend_info.dart';
 import 'package:tencent_cloud_chat_sdk/models/v2_tim_message.dart'
@@ -10,39 +8,41 @@ import 'package:tencent_cloud_chat_sdk/models/v2_tim_value_callback.dart'
     if (dart.library.html) 'package:tencent_cloud_chat_sdk/web/compatible_models/v2_tim_value_callback.dart';
 import 'package:tencent_cloud_chat_uikit/base_widgets/tim_ui_kit_class.dart';
 import 'package:tencent_cloud_chat_uikit/base_widgets/tim_callback.dart';
+import 'package:wukongimfluttersdk/entity/conversation.dart';
 
-typedef MessageFunction = Future<V2TimMessage?> Function(V2TimMessage message);
-
-typedef MessageFunctionNullCallback = Function(
-    V2TimValueCallback<V2TimMessage> res);
-
-typedef MessageFunctionOptional = Future<V2TimMessage?> Function(
+typedef WKMessageFunction = Future<V2TimMessage?> Function(
     V2TimMessage message);
 
-typedef MessageListFunction = Future<List<V2TimMessage>> Function(
+typedef WKMessageFunctionNullCallback = Function(
+    V2TimValueCallback<V2TimMessage> res);
+
+typedef WKMessageFunctionOptional = Future<V2TimMessage?> Function(
+    V2TimMessage message);
+
+typedef WKMessageListFunction = Future<List<V2TimMessage>> Function(
     List<V2TimMessage> messageList);
 
-typedef MessageListFunctionAsync = List<V2TimMessage> Function(
+typedef WKMessageListFunctionAsync = List<V2TimMessage> Function(
     List<V2TimMessage> messageList);
 
-typedef FutureBool = Future<bool>;
+typedef WKFutureBool = Future<bool>;
 
-typedef AddFriendFunction = Function(
+typedef WKAddFriendFunction = Function(
     String userID, String? remark, String? friendGroup, String? addWording);
 
-typedef ConversationListFunction = Future<List<V2TimConversation?>> Function(
-    List<V2TimConversation?> conversationList);
+typedef WKConversationListFunction = Future<List<WKUIConversationMsg?>>
+    Function(List<WKUIConversationMsg?> conversationList);
 
-typedef FriendListFunction = Future<List<V2TimFriendInfo>> Function(
+typedef WKFriendListFunction = Future<List<V2TimFriendInfo>> Function(
     List<V2TimFriendInfo> friendList);
 
-typedef FriendInfoFunction = Future<V2TimFriendInfo?> Function(
+typedef WKFriendInfoFunction = Future<V2TimFriendInfo?> Function(
     V2TimFriendInfo? friendInfo);
 
 /// Here is the default life cycle hooks implementation for all the hooks in TUIKit.
-abstract class DefaultLifeCycle {
-  static Future<List<V2TimConversation?>> defaultConversationListSolution(
-      List<V2TimConversation?> list) async {
+abstract class WKDefaultLifeCycle {
+  static Future<List<WKUIConversationMsg?>> defaultConversationListSolution(
+      List<WKUIConversationMsg?> list) async {
     return list;
   }
 

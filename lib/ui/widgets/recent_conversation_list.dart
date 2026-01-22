@@ -28,11 +28,14 @@ class RecentForwardList extends StatefulWidget {
 }
 
 class _RecentForwardListState extends TIMUIKitState<RecentForwardList> {
-  final TUIConversationViewModel _conversationViewModel = serviceLocator<TUIConversationViewModel>();
+  final TUIConversationViewModel _conversationViewModel =
+      serviceLocator<TUIConversationViewModel>();
   final List<V2TimConversation> _selectedConversation = [];
 
-  List<ISuspensionBeanImpl<V2TimConversation?>> _buildMemberList(List<V2TimConversation?> conversationList) {
-    final List<ISuspensionBeanImpl<V2TimConversation?>> showList = List.empty(growable: true);
+  List<ISuspensionBeanImpl<V2TimConversation?>> _buildMemberList(
+      List<V2TimConversation?> conversationList) {
+    final List<ISuspensionBeanImpl<V2TimConversation?>> showList =
+        List.empty(growable: true);
     for (var i = 0; i < conversationList.length; i++) {
       final item = conversationList[i];
       showList.add(ISuspensionBeanImpl(memberInfo: item, tagIndex: "#"));
@@ -41,7 +44,8 @@ class _RecentForwardListState extends TIMUIKitState<RecentForwardList> {
   }
 
   Widget _buildItem(V2TimConversation conversation) {
-    final isDesktopScreen = TUIKitScreenUtils.getFormFactor(context) == DeviceType.Desktop;
+    final isDesktopScreen =
+        TUIKitScreenUtils.getFormFactor(context) == DeviceType.Desktop;
 
     final faceUrl = conversation.faceUrl ?? "";
     final showName = conversation.showName ?? "";
@@ -51,7 +55,9 @@ class _RecentForwardListState extends TIMUIKitState<RecentForwardList> {
       children: [
         if (widget.isMultiSelect)
           Container(
-            padding: EdgeInsets.only(left: isDesktopScreen ? 8 : 16.0, top: isDesktopScreen ? 10 : 0),
+            padding: EdgeInsets.only(
+                left: isDesktopScreen ? 8 : 16.0,
+                top: isDesktopScreen ? 10 : 0),
             child: CheckBoxButton(
               isChecked: _selectedConversation.contains(conversation),
               onChanged: (value) {
@@ -104,14 +110,19 @@ class _RecentForwardListState extends TIMUIKitState<RecentForwardList> {
                 Expanded(
                     child: Container(
                   alignment: Alignment.centerLeft,
-                  padding: EdgeInsets.only(top: 10, bottom: isDesktopScreen ? 12 : 19),
+                  padding: EdgeInsets.only(
+                      top: 10, bottom: isDesktopScreen ? 12 : 19),
                   decoration: isDesktopScreen
                       ? null
-                      : const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFDBDBDB)))),
+                      : const BoxDecoration(
+                          border: Border(
+                              bottom: BorderSide(color: Color(0xFFDBDBDB)))),
                   child: Text(
                     showName,
                     // textAlign: TextAlign.center,
-                    style: TextStyle(color: const Color(0xFF111111), fontSize: isDesktopScreen ? 16 : 18),
+                    style: TextStyle(
+                        color: const Color(0xFF111111),
+                        fontSize: isDesktopScreen ? 16 : 18),
                   ),
                 ))
               ],
@@ -139,9 +150,11 @@ class _RecentForwardListState extends TIMUIKitState<RecentForwardList> {
         ChangeNotifierProvider.value(value: _conversationViewModel),
       ],
       builder: (context, w) {
-        final recentConvList = serviceLocator<TUIConversationViewModel>().conversationList;
+        final recentConvList =
+            serviceLocator<TUIConversationViewModel>().conversationList;
         final showList = _buildMemberList(recentConvList);
-        final isDesktopScreen = TUIKitScreenUtils.getFormFactor(context) == DeviceType.Desktop;
+        final isDesktopScreen =
+            TUIKitScreenUtils.getFormFactor(context) == DeviceType.Desktop;
 
         return AZListViewContainer(
           memberList: showList,

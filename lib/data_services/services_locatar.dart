@@ -3,10 +3,13 @@ import 'package:tencent_cloud_chat_uikit/business_logic/listener_model/tui_group
 import 'package:tencent_cloud_chat_uikit/business_logic/separate_models/tui_chat_model_tools.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/view_models/tui_chat_global_model.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/view_models/tui_conversation_view_model.dart';
+import 'package:tencent_cloud_chat_uikit/business_logic/view_models/wk_conversation_view_model.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/view_models/tui_friendship_view_model.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/view_models/tui_setting_model.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/conversation/conversation_services.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/conversation/conversation_services_implements.dart';
+import 'package:tencent_cloud_chat_uikit/data_services/conversation/wk_conversation_services.dart';
+import 'package:tencent_cloud_chat_uikit/data_services/conversation/wk_conversation_services_implements.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/core/core_services_implements.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/friendShip/friendship_services.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/friendShip/friendship_services_implements.dart';
@@ -51,5 +54,10 @@ void setupServiceLocator() {
     serviceLocator
         .registerSingleton<TUIGroupListenerModel>(TUIGroupListenerModel());
     boolIsInitailized = true;
+
+    // MARK: 悟空
+    // services
+    serviceLocator
+        .registerSingleton<WKConversationService>(WKConversationServicesImpl());
   }
 }

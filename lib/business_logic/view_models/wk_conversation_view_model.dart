@@ -5,20 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:tencent_cloud_chat_sdk/enum/V2TimConversationListener.dart';
 import 'package:tencent_cloud_chat_sdk/models/v2_tim_callback.dart'
     if (dart.library.html) 'package:tencent_cloud_chat_sdk/web/compatible_models/v2_tim_callback.dart';
-import 'package:tencent_cloud_chat_sdk/models/v2_tim_conversation.dart'
-    if (dart.library.html) 'package:tencent_cloud_chat_sdk/web/compatible_models/v2_tim_conversation.dart';
 import 'package:tencent_cloud_chat_sdk/models/v2_tim_friend_search_param.dart'
     if (dart.library.html) 'package:tencent_cloud_chat_sdk/web/compatible_models/v2_tim_friend_search_param.dart';
 import 'package:tencent_cloud_chat_sdk/tencent_im_sdk_plugin.dart';
-import 'package:tencent_cloud_chat_uikit/business_logic/life_cycle/conversation_life_cycle.dart';
+import 'package:tencent_cloud_chat_uikit/business_logic/life_cycle/wk_conversation_life_cycle.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/view_models/tui_chat_global_model.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/view_models/tui_self_info_view_model.dart';
-import 'package:tencent_cloud_chat_uikit/data_services/conversation/conversation_services.dart';
+import 'package:tencent_cloud_chat_uikit/data_services/conversation/wk_conversation_services.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/friendShip/friendship_services.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/message/message_services.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/services_locatar.dart';
 import 'package:tencent_cloud_chat_uikit/tencent_cloud_chat_uikit.dart';
 import 'package:tencent_cloud_chat_uikit/ui/utils/platform.dart';
+import 'package:tencent_cloud_chat_uikit/wukong/wk_http_utils.dart';
+import 'package:wukongimfluttersdk/entity/conversation.dart';
 
 /// 移除列表中的重复项
 ///
@@ -43,20 +43,20 @@ List<T> removeDuplicates<T>(
   return output;
 }
 
-class TUIConversationViewModel extends ChangeNotifier {
-  /// C2C会话前缀常量
-  static const String conversationC2CPrefix = "c2c_";
+class WKConversationViewModel extends ChangeNotifier {
+  /// C2C会话类型
+  static const int conversationC2C = 1;
 
-  /// 群组会话前缀常量
-  static const String conversationGroupPrefix = "group_";
+  /// 群组会话类型
+  static const int conversationGroup = 2;
 
   /// 自身信息视图模型，用于获取当前用户信息
   final TUISelfInfoViewModel selfInfoViewModel =
       serviceLocator<TUISelfInfoViewModel>();
 
   /// 会话服务，用于与后端交互获取会话数据
-  final ConversationService _conversationService =
-      serviceLocator<ConversationService>();
+  final WKConversationService _conversationService =
+      serviceLocator<WKConversationService>();
 
   /// 好友服务，用于搜索好友等操作
   final FriendshipServices _friendshipServices =
@@ -73,10 +73,10 @@ class TUIConversationViewModel extends ChangeNotifier {
   late V2TimConversationListener _conversationListener;
 
   /// 会话列表，存储当前用户的会话信息
-  List<V2TimConversation?> _conversationList = [];
+  List<WKUIConversationMsg?> _conversationList = [];
 
   /// 当前选中的会话
-  static V2TimConversation? _selectedConversation;
+  static WKUIConversationMsg? _selectedConversation;
 
   /// Web端草稿映射，用于存储Web端会话草稿
   Map<String, String> webDraftMap = {};
@@ -98,27 +98,28 @@ class TUIConversationViewModel extends ChangeNotifier {
   String _nextSeq = "0";
 
   /// 会话生命周期管理器
-  ConversationLifeCycle? _lifeCycle;
+  WKConversationLifeCycle? _lifeCycle;
 
   /// 获取会话列表，根据平台类型排序
   /// Web端按最后消息时间倒序排列，非Web端按orderkey排序
-  List<V2TimConversation?> get conversationList {
+  List<WKUIConversationMsg?> get conversationList {
     if (PlatformUtils().isWeb) {
       try {
         _conversationList.sort((a, b) {
-          return b!.lastMessage!.timestamp!
-              .compareTo(a!.lastMessage!.timestamp!);
+          return b!.lastMsgTimestamp.compareTo(a!.lastMsgTimestamp);
         });
-
-        final pinnedConversation = _conversationList
-            .where((element) => element?.isPinned == true)
-            .toList();
-        _conversationList.removeWhere((element) => element?.isPinned == true);
-        _conversationList = [...pinnedConversation, ..._conversationList];
+        // 置顶相关处理
+        // final pinnedConversation = _conversationList
+        //     .where((element) => element?.isPinned == true)
+        //     .toList();
+        // _conversationList.removeWhere((element) => element?.isPinned == true);
+        // _conversationList = [...pinnedConversation, ..._conversationList];
         // ignore: empty_catches
       } catch (e) {}
     } else {
-      _conversationList.sort((a, b) => b!.orderkey!.compareTo(a!.orderkey!));
+      // 腾讯中orderkey表示活跃时间，悟空用 lastMsgTimestamp 代替
+      _conversationList
+          .sort((a, b) => b!.lastMsgTimestamp.compareTo(a!.lastMsgTimestamp));
     }
     return _conversationList;
   }
@@ -127,9 +128,9 @@ class TUIConversationViewModel extends ChangeNotifier {
   ///
   /// @param conversationID 会话ID
   /// @return 对应的会话对象，如果不存在则返回null
-  V2TimConversation? getConversation(String conversationID) {
-    return _conversationList.firstWhereOrNull(
-        (element) => element?.conversationID == conversationID);
+  WKUIConversationMsg? getConversation(String conversationID) {
+    return _conversationList
+        .firstWhereOrNull((element) => element?.channelID == conversationID);
   }
 
   /// 获取需要滚动到的会话ID
@@ -166,14 +167,14 @@ class TUIConversationViewModel extends ChangeNotifier {
   /// 设置会话生命周期管理器
   ///
   /// @param value 生命周期管理器实例
-  set lifeCycle(ConversationLifeCycle? value) {
+  set lifeCycle(WKConversationLifeCycle? value) {
     _lifeCycle = value;
   }
 
   /// 设置会话列表
   ///
   /// @param conversationList 会话列表
-  set conversationList(List<V2TimConversation?> conversationList) {
+  set conversationList(List<WKUIConversationMsg?> conversationList) {
     _conversationList = conversationList;
     notifyListeners();
   }
@@ -181,57 +182,78 @@ class TUIConversationViewModel extends ChangeNotifier {
   /// 设置选中的会话
   ///
   /// @param value 会话对象
-  set selectedConversation(V2TimConversation? value) {
+  set selectedConversation(WKUIConversationMsg? value) {
     _selectedConversation = value;
     notifyListeners();
   }
 
   /// 获取选中的会话
-  V2TimConversation? get selectedConversation {
+  WKUIConversationMsg? get selectedConversation {
     return _selectedConversation;
   }
 
   /// 获取当前选中的会话（静态方法）
-  static V2TimConversation? of() {
+  static WKUIConversationMsg? of() {
     return _selectedConversation;
   }
 
   /// 构造函数，初始化会话监听器
-  TUIConversationViewModel() {
-    _conversationListener =
-        V2TimConversationListener(onConversationChanged: (conversationList) {
+  WKConversationViewModel() {
+    /// 添加会话列表刷新监听器
+    TencentImSDKPlugin.wukongIMManager.conversationManager
+        .addOnRefreshMsgListListener("chat_conversation",
+            (conversationList) async {
       _onConversationListChanged(conversationList);
-    }, onNewConversation: (conversationList) {
-      _addNewConversation(conversationList);
-    }, onTotalUnreadMessageCountChanged: (totalUnread) {
-      _totalUnReadCount = totalUnread;
-      _chatGlobalModel.totalUnReadCount = totalUnread;
-      notifyListeners();
-    }, onSyncServerFinish: () {
-      // Remove the process to load such a many of conversations after launching
-      if (!PlatformUtils().isWeb) {
-        loadInitConversation();
-      }
-    }, onConversationDeleted: (List<String> conversationIDList) {
-      _onConversationDeleted(conversationIDList);
-      for (var conversationID in conversationIDList) {
-        String resultID = "";
-        if (conversationID.startsWith(conversationC2CPrefix)) {
-          resultID = conversationID.replaceFirst(conversationC2CPrefix, "");
-        } else if (conversationID.startsWith(conversationGroupPrefix)) {
-          resultID = conversationID.replaceFirst(conversationGroupPrefix, "");
-        }
+      TencentImSDKPlugin.wukongIMManager.conversationManager
+          .getAllUnreadCount()
+          .then((totalUnread) {
+        _totalUnReadCount = totalUnread;
+        _chatGlobalModel.totalUnReadCount = totalUnread;
+        notifyListeners();
+      });
+    });
 
-        if (resultID != "") {
-          _chatGlobalModel.removeMessageList(resultID);
-        }
+    /// 添加会话删除监听器
+    TencentImSDKPlugin.wukongIMManager.conversationManager
+        .addOnDeleteMsgListener('chat', (channelID, channelType) {
+      _onConversationDeleted([channelID]);
+
+      _chatGlobalModel.removeMessageList(channelID);
+
+      TencentImSDKPlugin.wukongIMManager.conversationManager
+          .getAllUnreadCount()
+          .then((totalUnread) {
+        _totalUnReadCount = totalUnread;
+        _chatGlobalModel.totalUnReadCount = totalUnread;
+        notifyListeners();
+      });
+    });
+
+    /// 添加同步会话监听器
+    TencentImSDKPlugin.wukongIMManager.conversationManager
+        .addOnSyncConversationListener(
+            (lastSsgSeqs, msgCount, version, back) async {
+      await WKHttpUtils.syncConversation(lastSsgSeqs, msgCount, version, back);
+
+      // Remove the process to load such a many of conversations after launching
+      // 移除启动后加载大量会话的处理过程" 或 "移除应用启动后加载大量会话的逻辑
+      if (!PlatformUtils().isWeb) {
+        wkLoadInitConversation();
       }
+
+      TencentImSDKPlugin.wukongIMManager.conversationManager
+          .getAllUnreadCount()
+          .then((totalUnread) {
+        _totalUnReadCount = totalUnread;
+        _chatGlobalModel.totalUnReadCount = totalUnread;
+        notifyListeners();
+      });
     });
   }
 
   /// 加载初始会话数据
-  loadInitConversation() async {
-    await loadData(count: 40);
+  wkLoadInitConversation() async {
+    await wkLoadData(count: 40);
     // Remove the process to load such a many of conversations after launching
     // if (selfInfoViewModel.globalConfig?.isPreloadMessagesAfterInit ?? true) {
     //   _chatGlobalModel.initMessageMapFromLocalDatabase(_conversationList);
@@ -240,39 +262,39 @@ class TUIConversationViewModel extends ChangeNotifier {
 
   /// 初始化会话
   initConversation() async {
-    clearData();
-    loadInitConversation();
+    wkClearData();
+    wkLoadInitConversation();
   }
 
-  /// MARK: 加载会话数据
+  /// MARK: 加载悟空会话数据
   ///
   /// @param count 加载数量
-  Future<void> loadData({required int count}) async {
+  Future<void> wkLoadData({required int count}) async {
     _haveMoreData = true;
     final isRefresh = _nextSeq == "0";
-    final conversationResult = await _conversationService.getConversationList(
+    final conversationResult = await _conversationService.getWKConversationList(
         nextSeq: _nextSeq, count: count);
-    _nextSeq = conversationResult?.nextSeq ?? "";
-    final conversationList = conversationResult?.conversationList;
+    _nextSeq = conversationResult.nextSeq ?? "";
+    final conversationList = conversationResult.conversationList;
     if (conversationList != null) {
       if (conversationList.isEmpty || conversationList.length < count) {
         _haveMoreData = false;
       }
-      List<V2TimConversation?> combinedConversationList = [];
+      List<WKUIConversationMsg?> combinedConversationList = [];
       if (isRefresh) {
         combinedConversationList = conversationList;
       } else {
         combinedConversationList = [..._conversationList, ...conversationList];
       }
-      final List<V2TimConversation?> finalConversationList = await _lifeCycle
+      final List<WKUIConversationMsg?> finalConversationList = await _lifeCycle
               ?.conversationListWillMount(combinedConversationList) ??
           combinedConversationList;
-      _conversationList = removeDuplicates<V2TimConversation?>(
+      _conversationList = removeDuplicates<WKUIConversationMsg?>(
           finalConversationList,
-          (item1, item2) => item1?.conversationID == item2?.conversationID);
+          (item1, item2) => item1?.channelID == item2?.channelID);
       notifyListeners();
     }
-    _totalUnReadCount = await _conversationService.getTotalUnreadCount();
+    _totalUnReadCount = await _conversationService.getWKTotalUnreadCount();
     notifyListeners();
     return;
   }
@@ -280,7 +302,7 @@ class TUIConversationViewModel extends ChangeNotifier {
   /// 设置选中的会话
   ///
   /// @param conversation 会话对象
-  void setSelectedConversation(V2TimConversation conversation) {
+  void setWKSelectedConversation(WKUIConversationMsg conversation) {
     _selectedConversation = conversation;
     notifyListeners();
   }
@@ -289,11 +311,11 @@ class TUIConversationViewModel extends ChangeNotifier {
   ///
   /// @param conversationID 会话ID
   /// @param isPinned 是否置顶
-  Future<V2TimCallback> pinConversation({
+  Future<V2TimCallback> pinWKConversation({
     required String conversationID,
     required bool isPinned,
   }) {
-    return _conversationService.pinConversation(
+    return _conversationService.pinWKConversation(
         conversationID: conversationID, isPinned: isPinned);
   }
 
@@ -301,27 +323,28 @@ class TUIConversationViewModel extends ChangeNotifier {
   ///
   /// @param convID 会话ID
   /// @param convType 会话类型
-  Future<V2TimCallback?> clearHistoryMessage(
-      {required String convID, required int convType}) async {
+  Future<V2TimCallback?> clearWKHistoryMessage(
+      {required String channelID, required int channelType}) async {
     if (_lifeCycle?.shouldClearHistoricalMessageForConversation != null &&
-        await _lifeCycle!.shouldClearHistoricalMessageForConversation(convID) ==
+        await _lifeCycle!
+                .shouldClearHistoricalMessageForConversation(channelID) ==
             false) {
       return null;
     }
 
-    globalChatModel.setMessageList(convID, []);
+    globalChatModel.setMessageList(channelID, []);
 
-    if (convType == 1) {
-      return _messageService.clearC2CHistoryMessage(userID: convID);
+    if (channelType == 1) {
+      return _messageService.clearC2CHistoryMessage(userID: channelID);
     } else {
-      return _messageService.clearGroupHistoryMessage(groupID: convID);
+      return _messageService.clearGroupHistoryMessage(groupID: channelID);
     }
   }
 
   /// 搜索好友
   ///
   /// @param searchKey 搜索关键词
-  searchFriends(String searchKey) async {
+  wkSearchFriends(String searchKey) async {
     final res = await _friendshipServices.searchFriends(
         searchParam: V2TimFriendSearchParam(keywordList: [searchKey]));
     return res;
@@ -330,17 +353,17 @@ class TUIConversationViewModel extends ChangeNotifier {
   /// 删除会话
   ///
   /// @param conversationID 会话ID
-  Future<V2TimCallback?> deleteConversation(
-      {required String conversationID}) async {
+  Future<bool?> deleteWKConversation(
+      {required String channelID, required int channelType}) async {
     if (_lifeCycle?.shouldDeleteConversation != null &&
-        await _lifeCycle!.shouldDeleteConversation(conversationID) == false) {
+        await _lifeCycle!.shouldDeleteConversation(channelID) == false) {
       return null;
     }
-    final res = await _conversationService.deleteConversation(
-        conversationID: conversationID);
-    if (res.code == 0) {
+    final res = await _conversationService.deleteWKConversation(
+        channelID: channelID, channelType: channelType);
+    if (res) {
       _conversationList
-          .removeWhere((element) => element?.conversationID == conversationID);
+          .removeWhere((element) => element?.channelID == channelID);
       notifyListeners();
     }
     return res;
@@ -349,13 +372,13 @@ class TUIConversationViewModel extends ChangeNotifier {
   /// 处理会话列表变更事件
   ///
   /// @param list 会话列表
-  _onConversationListChanged(List<V2TimConversation> list) {
+  _onConversationListChanged(List<WKUIConversationMsg> list) {
     for (int element = 0; element < list.length; element++) {
-      int index = _conversationList.indexWhere(
-          (item) => item!.conversationID == list[element].conversationID);
+      int index = _conversationList
+          .indexWhere((item) => item!.channelID == list[element].channelID);
       if (index > -1) {
         _conversationList.setAll(
-            index, [list[element]] as List<V2TimConversation?>);
+            index, [list[element]] as List<WKUIConversationMsg?>);
       } else {
         _conversationList.add(list[element]);
       }
@@ -369,37 +392,38 @@ class TUIConversationViewModel extends ChangeNotifier {
   /// @param list 会话ID列表
   _onConversationDeleted(List<String> list) {
     for (int i = 0; i < list.length; i++) {
-      int index = _conversationList
-          .indexWhere((item) => item!.conversationID == list[i]);
+      int index =
+          _conversationList.indexWhere((item) => item!.channelID == list[i]);
       if (index > -1) {
         _conversationList.removeAt(index);
-        _conversationList = removeDuplicates<V2TimConversation?>(
+        _conversationList = removeDuplicates<WKUIConversationMsg?>(
             _conversationList,
-            (item1, item2) => item1?.conversationID == item2?.conversationID);
+            (item1, item2) => item1?.channelID == item2?.channelID);
       }
     }
     notifyListeners();
   }
 
-  /// 添加新会话
-  ///
-  /// @param list 会话列表
-  _addNewConversation(List<V2TimConversation> list) {
-    _conversationList.addAll(list);
-    _conversationList = removeDuplicates<V2TimConversation?>(_conversationList,
-        (item1, item2) => item1?.conversationID == item2?.conversationID);
-    notifyListeners();
-  }
+  // /// 添加新会话
+  // ///
+  // /// @param list 会话列表
+  // _addNewConversation(List<WKUIConversationMsg> list) {
+  //   _conversationList.addAll(list);
+  //   _conversationList = removeDuplicates<WKUIConversationMsg?>(
+  //       _conversationList,
+  //       (item1, item2) => item1?.channelID == item2?.channelID);
+  //   notifyListeners();
+  // }
 
   /// 设置会话监听器
-  setConversationListener() {
-    _conversationService.addConversationListener(
+  setWKConversationListener() {
+    _conversationService.addWKConversationListener(
         listener: _conversationListener);
   }
 
   /// 移除会话监听器
-  removeConversationListener() {
-    _conversationService.removeConversationListener(
+  removeWKConversationListener() {
+    _conversationService.removeWKConversationListener(
         listener: _conversationListener);
   }
 
@@ -410,7 +434,7 @@ class TUIConversationViewModel extends ChangeNotifier {
   /// @param isTopic 是否为话题
   /// @param groupID 群组ID
   /// @param isAllowWeb 是否允许Web端设置
-  Future<V2TimCallback> setConversationDraft({
+  Future<V2TimCallback> setWKConversationDraft({
     required String conversationID,
     String? draftText,
     bool isTopic = false,
@@ -434,7 +458,7 @@ class TUIConversationViewModel extends ChangeNotifier {
             .setTopicInfo(topicInfo: topicInfo!);
         return res;
       } else {
-        return _conversationService.setConversationDraft(
+        return _conversationService.setWKConversationDraft(
             conversationID: conversationID, draftText: draftText);
       }
     }
@@ -452,14 +476,14 @@ class TUIConversationViewModel extends ChangeNotifier {
   /// 获取Web端草稿
   ///
   /// @param conversationID 会话ID
-  String? getWebDraft({
+  String? getWKWebDraft({
     required String conversationID,
   }) {
     return TencentUtils.checkString(webDraftMap[conversationID]);
   }
 
   /// 清空数据
-  clearData() {
+  wkClearData() {
     _conversationList = [];
     _selectedConversation = null;
     _nextSeq = "0";
@@ -470,9 +494,9 @@ class TUIConversationViewModel extends ChangeNotifier {
   /// 刷新会话列表
   ///
   /// @param count 加载数量
-  refresh({int count = 100}) {
+  wkRefresh({int count = 100}) {
     _nextSeq = "0";
     _haveMoreData = true;
-    loadData(count: count);
+    wkLoadData(count: count);
   }
 }

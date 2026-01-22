@@ -14,63 +14,69 @@ import 'package:tencent_cloud_chat_uikit/base_widgets/tim_ui_kit_base.dart';
 import 'package:tencent_cloud_chat_uikit/base_widgets/tim_ui_kit_state.dart';
 import 'package:tencent_cloud_chat_uikit/base_widgets/tim_ui_kit_statelesswidget.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/life_cycle/conversation_life_cycle.dart';
+import 'package:tencent_cloud_chat_uikit/business_logic/life_cycle/wk_conversation_life_cycle.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/view_models/tui_conversation_view_model.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/view_models/tui_friendship_view_model.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/listener_model/tui_group_listener_model.dart';
+import 'package:tencent_cloud_chat_uikit/business_logic/view_models/wk_conversation_view_model.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/core/tim_uikit_wide_modal_operation_key.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/services_locatar.dart';
 import 'package:tencent_cloud_chat_uikit/tencent_cloud_chat_uikit.dart';
 import 'package:tencent_cloud_chat_uikit/ui/controller/tim_uikit_conversation_controller.dart';
+import 'package:tencent_cloud_chat_uikit/ui/controller/wk_uikit_conversation_controller.dart';
 import 'package:tencent_cloud_chat_uikit/ui/utils/platform.dart';
 import 'package:tencent_cloud_chat_uikit/ui/utils/screen_utils.dart';
 import 'package:tencent_cloud_chat_uikit/ui/views/TIMUIKitConversation/tim_uikit_conversation_item.dart';
+import 'package:tencent_cloud_chat_uikit/ui/views/TIMUIKitConversation/wk_uikit_conversation_item.dart';
 import 'package:tencent_cloud_chat_uikit/ui/widgets/customize_ball_pulse_header.dart';
 import 'package:tencent_cloud_chat_uikit/ui/widgets/wide_popup.dart';
 import 'package:tencent_cloud_chat_uikit/base_widgets/tim_callback.dart';
 import 'package:tencent_cloud_chat_uikit/theme/color.dart';
 import 'package:tencent_cloud_chat_uikit/theme/tui_theme_view_model.dart';
+import 'package:wukongimfluttersdk/entity/conversation.dart';
+import 'package:wukongimfluttersdk/entity/msg.dart';
 
 /// 用于构建会话项的函数类型
-typedef ConversationItemBuilder = Widget Function(
-    V2TimConversation conversationItem,
+typedef WKConversationItemBuilder = Widget Function(
+    WKUIConversationMsg conversationItem,
     [V2TimUserStatus? onlineStatus]);
 
 /// 用于构建滑动操作面板的函数类型
-typedef ConversationItemSlideBuilder = List<ConversationItemSlidePanel>
-    Function(V2TimConversation conversationItem);
+typedef WKConversationItemSlideBuilder = List<ConversationItemSlidePanel>
+    Function(WKUIConversationMsg conversationItem);
 
 /// 用于构建二级菜单的函数类型
-typedef ConversationItemSecondaryMenuBuilder = Widget Function(
-    V2TimConversation conversationItem, VoidCallback onClose);
+typedef WKConversationItemSecondaryMenuBuilder = Widget Function(
+    WKUIConversationMsg conversationItem, VoidCallback onClose);
 
-class TIMUIKitConversation extends StatefulWidget {
+class WKUIKitConversation extends StatefulWidget {
   /// 点击会话项后的回调函数
-  final ValueChanged<V2TimConversation>? onTapItem;
+  final ValueChanged<WKUIConversationMsg>? onTapItem;
 
   /// 会话控制器
-  final TIMUIKitConversationController? controller;
+  final WKUIKitConversationController? controller;
 
   /// 会话项构建器
-  final ConversationItemBuilder? itemBuilder;
+  final WKConversationItemBuilder? itemBuilder;
 
   /// 每个会话项的滑动操作构建器，在窄屏幕上显示
-  final ConversationItemSlideBuilder? itemSlideBuilder;
+  final WKConversationItemSlideBuilder? itemSlideBuilder;
 
   /// 每个会话项的二级点击菜单构建器，在宽屏幕上显示
-  final ConversationItemSecondaryMenuBuilder? itemSecondaryMenuBuilder;
+  final WKConversationItemSecondaryMenuBuilder? itemSecondaryMenuBuilder;
 
   /// 当没有会话时显示的组件
   final Widget Function()? emptyBuilder;
 
   /// 会话过滤器
-  final bool Function(V2TimConversation? conversation)? conversationCollector;
+  final bool Function(WKUIConversationMsg? conversation)? conversationCollector;
 
   /// 每个会话项第二行的构建器，
   /// 通常显示最后一条消息的摘要
-  final LastMessageBuilder? lastMessageBuilder;
+  final WKLastMessageBuilder? lastMessageBuilder;
 
   /// `TIMUIKitConversation` 的生命周期钩子
-  final ConversationLifeCycle? lifeCycle;
+  final WKConversationLifeCycle? lifeCycle;
 
   /// 控制是否在头像上显示用户的在线状态
   final bool isShowOnlineStatus;
@@ -78,7 +84,7 @@ class TIMUIKitConversation extends StatefulWidget {
   /// 控制是否显示会话有草稿文本的标识符
   final bool isShowDraft;
 
-  const TIMUIKitConversation(
+  const WKUIKitConversation(
       {Key? key,
       this.lifeCycle,
       this.onTapItem,
@@ -95,7 +101,7 @@ class TIMUIKitConversation extends StatefulWidget {
 
   @override
   State<StatefulWidget> createState() {
-    return _TIMUIKitConversationState();
+    return _WKUIKitConversationState();
   }
 }
 
@@ -154,13 +160,13 @@ class ConversationItemSlidePanel extends TIMUIKitStatelessWidget {
   }
 }
 
-class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
+class _WKUIKitConversationState extends TIMUIKitState<WKUIKitConversation> {
   /// 会话视图模型
-  final TUIConversationViewModel model =
-      serviceLocator<TUIConversationViewModel>();
+  final WKConversationViewModel model =
+      serviceLocator<WKConversationViewModel>();
 
   /// 会话控制器
-  late TIMUIKitConversationController _timuiKitConversationController;
+  late WKUIKitConversationController _wkuiKitConversationController;
 
   /// 主题视图模型
   final TUIThemeViewModel themeViewModel = serviceLocator<TUIThemeViewModel>();
@@ -182,48 +188,49 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
   void initState() {
     super.initState();
     final controller = getController();
-    _timuiKitConversationController = controller;
-    _timuiKitConversationController.model = model;
+    _wkuiKitConversationController = controller;
+    _wkuiKitConversationController.model = model;
     _autoScrollController = AutoScrollController();
   }
 
   /// 获取会话控制器实例
-  TIMUIKitConversationController getController() {
-    return widget.controller ?? TIMUIKitConversationController();
+  WKUIKitConversationController getController() {
+    return widget.controller ?? WKUIKitConversationController();
   }
 
   /// 处理会话项点击事件
-  void onTapConvItem(V2TimConversation conversation) {
+  void onTapConvItem(WKUIConversationMsg conversation) {
     if (widget.onTapItem != null) {
       widget.onTapItem!(conversation);
     }
-    model.setSelectedConversation(conversation);
+    model.setWKSelectedConversation(conversation);
   }
 
   /// 清除会话历史消息
-  _clearHistory(V2TimConversation conversationItem) {
-    _timuiKitConversationController.clearHistoryMessage(
+  _clearHistory(WKUIConversationMsg conversationItem) {
+    _wkuiKitConversationController.clearWKHistoryMessage(
         conversation: conversationItem);
   }
 
   /// 置顶/取消置顶会话
-  _pinConversation(V2TimConversation conversation) {
-    _timuiKitConversationController.pinConversation(
-        conversationID: conversation.conversationID,
-        isPinned: !conversation.isPinned!);
+  _pinConversation(WKUIConversationMsg conversation) {
+    print("悟空：我暂时还没有实现");
+    // _wkuiKitConversationController.pinWKConversation(
+    //     conversationID: conversation.conversationID,
+    //     isPinned: !conversation.isPinned!);
   }
 
   /// 删除会话
-  _deleteConversation(V2TimConversation conversation) {
-    _timuiKitConversationController.deleteConversation(
-        conversationID: conversation.conversationID);
+  _deleteConversation(WKUIConversationMsg conversation) {
+    _wkuiKitConversationController.deleteWKConversation(
+        channelID: conversation.channelID,
+        channelType: conversation.channelType);
   }
 
   /// 获取过滤后的会话列表
-  List<V2TimConversation?> getFilteredConversation() {
-    List<V2TimConversation?> filteredConversationList = model.conversationList
-        .where(
-            (element) => (element?.groupID != null || element?.userID != null))
+  List<WKUIConversationMsg?> getFilteredConversation() {
+    List<WKUIConversationMsg?> filteredConversationList = model.conversationList
+        .where((element) => (element?.channelID != null))
         .toList();
     if (widget.conversationCollector != null) {
       filteredConversationList = filteredConversationList
@@ -240,7 +247,7 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
     int targetIndex = 1;
     for (int i = msgList.length - 1; i >= 0; i--) {
       final currentConversation = msgList[i];
-      if (currentConversation?.conversationID == conversationID) {
+      if (currentConversation?.channelID == conversationID) {
         isFound = true;
         targetIndex = i;
         break;
@@ -257,7 +264,7 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
 
   /// 构建默认的二级菜单
   Widget _defaultSecondaryMenu(
-      V2TimConversation conversationItem, VoidCallback onClose) {
+      WKUIConversationMsg conversationItem, VoidCallback onClose) {
     return TUIKitColumnMenu(data: [
       if (!PlatformUtils().isWeb)
         ColumnMenuItem(
@@ -267,17 +274,18 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
               onClose();
               _clearHistory(conversationItem);
             }),
-      ColumnMenuItem(
-          label: conversationItem.isPinned! ? TIM_t("取消置顶") : TIM_t("置顶"),
-          icon: Icon(
-              conversationItem.isPinned!
-                  ? Icons.vertical_align_bottom
-                  : Icons.vertical_align_top,
-              size: 16),
-          onClick: () {
-            onClose();
-            _pinConversation(conversationItem);
-          }),
+      // 悟空 字段中 无 置顶 字段 暂时注掉
+      // ColumnMenuItem(
+      //     label: conversationItem.isPinned! ? TIM_t("取消置顶") : TIM_t("置顶"),
+      //     icon: Icon(
+      //         conversationItem.isPinned!
+      //             ? Icons.vertical_align_bottom
+      //             : Icons.vertical_align_top,
+      //         size: 16),
+      //     onClick: () {
+      //       onClose();
+      // _pinConversation(conversationItem);
+      //     }),
       ColumnMenuItem(
           label: TIM_t("删除会话"),
           icon: const Icon(Icons.delete_outline, size: 16),
@@ -290,7 +298,7 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
 
   /// 构建默认的滑动操作面板
   List<ConversationItemSlidePanel> _defaultSlideBuilder(
-    V2TimConversation conversationItem,
+    WKUIConversationMsg conversationItem,
   ) {
     final theme = themeViewModel.theme;
     return [
@@ -306,15 +314,15 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
           spacing: 0,
           autoClose: true,
         ),
-      ConversationItemSlidePanel(
-        onPressed: (context) {
-          _pinConversation(conversationItem);
-        },
-        backgroundColor:
-            theme.conversationItemSliderPinBgColor ?? CommonColor.infoColor,
-        foregroundColor: theme.conversationItemSliderTextColor,
-        label: conversationItem.isPinned! ? TIM_t("取消置顶") : TIM_t("置顶"),
-      ),
+      // ConversationItemSlidePanel(
+      //   onPressed: (context) {
+      //     _pinConversation(conversationItem);
+      //   },
+      //   backgroundColor:
+      //       theme.conversationItemSliderPinBgColor ?? CommonColor.infoColor,
+      //   foregroundColor: theme.conversationItemSliderTextColor,
+      //   label: conversationItem.isPinned! ? TIM_t("取消置顶") : TIM_t("置顶"),
+      // ),
       ConversationItemSlidePanel(
         onPressed: (context) {
           _deleteConversation(conversationItem);
@@ -329,7 +337,7 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
 
   /// 获取二级菜单
   Widget _getSecondaryMenu(
-      V2TimConversation conversation, VoidCallback onClose) {
+      WKUIConversationMsg conversation, VoidCallback onClose) {
     if (widget.itemSecondaryMenuBuilder != null) {
       return widget.itemSecondaryMenuBuilder!(conversation, onClose);
     }
@@ -337,7 +345,7 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
   }
 
   /// 获取滑动操作面板构建器
-  ConversationItemSlideBuilder _getSlideBuilder() {
+  WKConversationItemSlideBuilder _getSlideBuilder() {
     return widget.itemSlideBuilder ?? _defaultSlideBuilder;
   }
 
@@ -362,7 +370,7 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
           ChangeNotifierProvider.value(value: groupListenerModel)
         ],
         builder: (BuildContext context, Widget? w) {
-          final _model = Provider.of<TUIConversationViewModel>(context);
+          final _model = Provider.of<WKConversationViewModel>(context);
           bool haveMoreData = _model.haveMoreData;
           final _friendShipViewModel =
               Provider.of<TUIFriendShipViewModel>(context);
@@ -387,7 +395,7 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
             }
           }
 
-          List<V2TimConversation?> filteredConversationList =
+          List<WKUIConversationMsg?> filteredConversationList =
               getFilteredConversation();
 
           if (TencentUtils.checkString(_model.scrollToConversation) != null) {
@@ -404,15 +412,17 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
                     itemBuilder: (context, index) {
                       if (index == filteredConversationList.length - 1) {
                         if (haveMoreData) {
-                          _timuiKitConversationController.loadData();
+                          _wkuiKitConversationController.loadData();
                         }
                       }
 
                       final conversationItem = filteredConversationList[index];
 
+                      // TODO: channelID 存在疑点
                       final V2TimUserStatus? onlineStatus =
                           _friendShipViewModel.userStatusList.firstWhere(
-                              (item) => item.userID == conversationItem?.userID,
+                              (item) =>
+                                  item.userID == conversationItem?.channelID,
                               orElse: () => V2TimUserStatus(statusType: 0));
 
                       if (widget.itemBuilder != null) {
@@ -423,10 +433,12 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
                       final slideChildren =
                           _getSlideBuilder()(conversationItem!);
 
-                      final isCurrent = conversationItem.conversationID ==
-                          model.selectedConversation?.conversationID;
+                      final isCurrent = conversationItem.channelID ==
+                          model.selectedConversation?.channelID;
 
-                      final isPined = conversationItem.isPinned ?? false;
+                      // 先注掉,使用默认值
+                      // final isPined = conversationItem.isPined ?? false;
+                      final isPined = false;
 
                       /// 构建会话项
                       Widget conversationLineItem() {
@@ -437,28 +449,57 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
                                   ? theme.conversationItemPinedBgColor
                                   : theme.conversationItemBgColor,
                           child: GestureDetector(
-                            child: TIMUIKitConversationItem(
-                                isCurrent: isCurrent,
-                                lastMessageBuilder: widget.lastMessageBuilder,
-                                faceUrl: conversationItem.faceUrl ?? "",
-                                nickName: conversationItem.showName ?? "",
-                                isDisturb:
-                                    (conversationItem.groupType == "Meeting"
-                                        ? false
-                                        : conversationItem.recvOpt != 0),
-                                lastMsg: conversationItem.lastMessage,
-                                isPined: isPined,
-                                groupAtInfoList:
-                                    conversationItem.groupAtInfoList ?? [],
-                                unreadCount: conversationItem.unreadCount ?? 0,
-                                draftText: conversationItem.draftText,
-                                onlineStatus: (widget.isShowOnlineStatus &&
-                                        conversationItem.userID != null &&
-                                        conversationItem.userID!.isNotEmpty)
-                                    ? onlineStatus
-                                    : null,
-                                draftTimestamp: conversationItem.draftTimestamp,
-                                convType: conversationItem.type),
+                            // child: TIMUIKitConversationItem(
+                            //     isCurrent: isCurrent,
+                            //     lastMessageBuilder: widget.lastMessageBuilder,
+                            //     faceUrl: conversationItem.faceUrl ?? "",
+                            //     nickName: conversationItem.showName ?? "",
+                            //     isDisturb:
+                            //         (conversationItem.groupType == "Meeting"
+                            //             ? false
+                            //             : conversationItem.recvOpt != 0),
+                            //     lastMsg: conversationItem.lastMessage,
+                            //     isPined: isPined,
+                            //     groupAtInfoList:
+                            //         conversationItem.groupAtInfoList ?? [],
+                            //     unreadCount: conversationItem.unreadCount ?? 0,
+                            //     draftText: conversationItem.draftText,
+                            //     onlineStatus: (widget.isShowOnlineStatus &&
+                            //             conversationItem.userID != null &&
+                            //             conversationItem.userID!.isNotEmpty)
+                            //         ? onlineStatus
+                            //         : null,
+                            //     draftTimestamp: conversationItem.draftTimestamp,
+                            //     convType: conversationItem.type),
+                            // onTap: () => onTapConvItem(conversationItem),
+                            // MARK: 暂时数据有限注掉原有，使用建议
+                            child: FutureBuilder<WKMsg?>(
+                              future: conversationItem.getWkMsg(),
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  // 可选：显示加载状态，或空内容
+                                  return _buildConversationItem(
+                                    conversationItem: conversationItem,
+                                    lastMsg: null,
+                                    onlineStatus: onlineStatus,
+                                    isCurrent: isCurrent,
+                                    isPined: isPined,
+                                    isDesktopScreen: isDesktopScreen,
+                                  );
+                                } else {
+                                  final lastMsg = snapshot.data;
+                                  return _buildConversationItem(
+                                    conversationItem: conversationItem,
+                                    lastMsg: lastMsg,
+                                    onlineStatus: onlineStatus,
+                                    isCurrent: isCurrent,
+                                    isPined: isPined,
+                                    isDesktopScreen: isDesktopScreen,
+                                  );
+                                }
+                              },
+                            ),
                             onTap: () => onTapConvItem(conversationItem),
                           ),
                         );
@@ -467,7 +508,7 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
                       return TUIKitScreenUtils.getDeviceWidget(
                           context: context,
                           desktopWidget: AutoScrollTag(
-                            key: ValueKey(conversationItem.conversationID),
+                            key: ValueKey(conversationItem.channelID),
                             controller: _autoScrollController,
                             index: index,
                             child: InkWell(
@@ -495,7 +536,7 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
                             ),
                           ),
                           defaultWidget: AutoScrollTag(
-                            key: ValueKey(conversationItem.conversationID),
+                            key: ValueKey(conversationItem.channelID),
                             controller: _autoScrollController,
                             index: index,
                             child: Slidable(
@@ -520,7 +561,7 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
                 child: EasyRefresh(
                   header: CustomizeBallPulseHeader(color: theme.primaryColor),
                   onRefresh: () async {
-                    model.refresh();
+                    model.wkRefresh();
                   },
                   child: conversationList(),
                 ),
@@ -529,5 +570,33 @@ class _TIMUIKitConversationState extends TIMUIKitState<TIMUIKitConversation> {
                   controller: _autoScrollController,
                   child: conversationList()));
         });
+  }
+
+  Widget _buildConversationItem({
+    required WKUIConversationMsg conversationItem,
+    required WKMsg? lastMsg,
+    required V2TimUserStatus? onlineStatus,
+    required bool isCurrent,
+    required bool isPined,
+    required bool isDesktopScreen,
+  }) {
+    return WKUIKitConversationItem(
+      isCurrent: isCurrent,
+      lastMessageBuilder: widget.lastMessageBuilder,
+      faceUrl: "",
+      nickName: conversationItem.channelID,
+      isDisturb: false,
+      lastMsg: lastMsg,
+      isPined: false,
+      groupAtInfoList: [],
+      unreadCount: conversationItem.unreadCount,
+      draftText: '暂无草稿',
+      onlineStatus:
+          (widget.isShowOnlineStatus && conversationItem.channelID.isNotEmpty)
+              ? onlineStatus
+              : null,
+      draftTimestamp: 0,
+      convType: conversationItem.channelType,
+    );
   }
 }

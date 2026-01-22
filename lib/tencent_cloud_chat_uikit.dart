@@ -2,6 +2,7 @@ library tencent_cloud_chat_uikit;
 
 import 'package:tencent_cloud_chat_sdk/manager/v2_tim_manager.dart';
 import 'package:tencent_cloud_chat_sdk/tencent_im_sdk_plugin.dart';
+import 'package:tencent_cloud_chat_uikit/data_services/core/wk_core_services_implements.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/services_locatar.dart';
 import 'package:wukongimfluttersdk/wkim.dart';
 import 'data_services/core/core_services_implements.dart';
@@ -60,6 +61,12 @@ class TIMUIKitCore {
 
   static V2TIMManager getSDKInstance() {
     return TencentImSDKPlugin.v2TIMManager;
+  }
+
+  // 新增 悟空 核心服务
+  static WKCoreServicesImpl getWKInstance() {
+    setupServiceLocator();
+    return serviceLocator<WKCoreServicesImpl>();
   }
 
   // 新增 悟空 IM SDK 实例获取方法
