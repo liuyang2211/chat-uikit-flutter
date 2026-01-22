@@ -74,6 +74,7 @@ class WKHttpUtils {
   static Future<String> getIP(String uid) async {
     try {
       final response = await dio.get('/route');
+      print('请求 wukogn getIP uid: $uid, token: $token response:$response');
       if (response.statusCode == HttpStatus.ok) {
         return response.data['tcp_addr'] ?? '';
       }

@@ -8,6 +8,7 @@ import 'package:wukongimfluttersdk/wkim.dart';
 
 class WKIMUtils {
   static Future<bool> initIM(String uid, String token) async {
+    print('IMUtils uid=$uid token=$token');
     bool result = await WKIM.shared.setup(Options.newDefault(uid, token));
     WKIM.shared.options.getAddr = (Function(String address) complete) async {
       String ip = await WKHttpUtils.getIP(uid);
