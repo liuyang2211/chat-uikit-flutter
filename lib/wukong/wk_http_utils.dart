@@ -14,7 +14,7 @@ class WKHttpUtils {
   // static String apiURL = "https://api.githubim.com";
   // static String apiURL = "http://62.234.8.38:7090/v1";
   // static String apiURL = "http://175.27.245.108:15001";
-  static String apiURL = "http://175.17.19.72:5001";
+  static String apiURL = "http://172.17.19.72:5001";
   static Dio? _dio;
 
   static String uid = "";
