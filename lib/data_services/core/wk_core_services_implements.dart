@@ -195,7 +195,7 @@ class WKCoreServicesImpl implements WKCoreServices {
         serviceLocator<TUIGroupListenerModel>();
 
     tuiFriendShipViewModel.addFriendListener();
-    wkConversationViewModel.setConversationListener();
+    wkConversationViewModel.setWKConversationListener();
     tuiChatViewModel.addAdvancedMsgListener();
     tuiGroupListenerModel.setGroupListener();
   }
@@ -211,7 +211,7 @@ class WKCoreServicesImpl implements WKCoreServices {
         serviceLocator<TUIGroupListenerModel>();
 
     tuiFriendShipViewModel.removeFriendshipListener();
-    wkConversationViewModel.removeConversationListener();
+    wkConversationViewModel.removeWKConversationListener();
     tuiChatViewModel.removeAdvanceMsgListener();
     tuiGroupListenerModel.removeGroupListener();
   }
@@ -246,7 +246,7 @@ class WKCoreServicesImpl implements WKCoreServices {
         serviceLocator<TUIChatGlobalModel>();
 
     tuiFriendShipViewModel.clearData();
-    wkConversationViewModel.clearData();
+    wkConversationViewModel.wkClearData();
     tuiChatViewModel.clearData();
   }
 
