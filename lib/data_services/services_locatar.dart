@@ -61,5 +61,9 @@ void setupServiceLocator() {
     serviceLocator.registerSingleton<WKCoreServicesImpl>(WKCoreServicesImpl());
     serviceLocator
         .registerSingleton<WKConversationService>(WKConversationServicesImpl());
+
+    // view models
+    serviceLocator
+        .registerSingleton<WKConversationViewModel>(WKConversationViewModel());
   }
 }

@@ -60,7 +60,7 @@ class WKHttpUtils {
         'device_flag': 0,
         'device_level': 1
       });
-
+      print('悟空：/user/token: response:$response');
       if (response.statusCode == HttpStatus.ok) {
         print('Login successful for response: ${response.data}');
       }
@@ -101,7 +101,7 @@ class WKHttpUtils {
         "msg_count": msgCount,
         "device_uuid": WKHttpUtils.uid,
       });
-
+      print('悟空：/conversation/sync: response:$response');
       WKSyncConversation conversation = WKSyncConversation();
       conversation.conversations = [];
 
@@ -184,7 +184,7 @@ class WKHttpUtils {
         "limit": limit,
         "pull_mode": pullMode
       });
-
+      print('悟空：/message/channel/sync: response:$response');
       if (response.statusCode == HttpStatus.ok) {
         var data = response.data;
         WKSyncChannelMsg msg = WKSyncChannelMsg();
@@ -198,7 +198,7 @@ class WKHttpUtils {
           dynamic json = messages[i];
           msgList.add(getWKSyncMsg(json));
         }
-        print('同步channel消息数量：${msgList.length}');
+        print('同步channel消息数量: ${msgList.length}');
         msg.messages = msgList;
         back(msg);
       }
@@ -263,7 +263,7 @@ class WKHttpUtils {
       }
 
       final response = await dio.get('/groups/$groupId');
-
+      print('悟空：/groups/$groupId: response:$response');
       if (response.statusCode == HttpStatus.ok) {
         var json = response.data;
         var channel = WKChannel(groupId, WKChannelType.group);
@@ -299,7 +299,7 @@ class WKHttpUtils {
       }
 
       final response = await dio.get('/users/$uid');
-
+      print('悟空：/users/$uid: response:$response');
       if (response.statusCode == HttpStatus.ok) {
         var json = response.data;
         var channel = WKChannel(uid, WKChannelType.personal);
@@ -343,7 +343,7 @@ class WKHttpUtils {
         'message_seq': msgSeq,
         'message_id': msgId,
       });
-
+      print('悟空：/message/revoke: response:$response');
       if (response.statusCode == HttpStatus.ok) {
         print('消息撤回成功');
         return true;
@@ -382,7 +382,7 @@ class WKHttpUtils {
         'message_seq': msgSeq,
         'message_id': msgId,
       });
-
+      print('悟空：/message/delete: response:$response');
       if (response.statusCode == HttpStatus.ok) {
         TIMUIKitCore.getWKIMSDKInstance()
             .messageManager
@@ -413,7 +413,7 @@ class WKHttpUtils {
         'limit': 100,
         'extra_version': version,
       });
-
+      print('悟空：/message/extra/sync: response:$response');
       if (response.statusCode == HttpStatus.ok) {
         var arrJson = response.data;
         if (arrJson != null && arrJson.length > 0) {
@@ -449,7 +449,7 @@ class WKHttpUtils {
         'channel_type': channelType,
         'unread': 0,
       });
-
+      print('悟空：/conversation/clearUnread: response:$response');
       if (response.statusCode == HttpStatus.ok) {
         print('Unread count cleared successfully');
       }
@@ -471,7 +471,7 @@ class WKHttpUtils {
         'channel_type': channelType,
         'message_seq': maxSeq
       });
-
+      print('悟空：/message/offset: response:$response');
       if (response.statusCode == HttpStatus.ok) {
         TIMUIKitCore.getWKIMSDKInstance()
             .messageManager
@@ -489,6 +489,7 @@ class WKHttpUtils {
         'login_uid': WKHttpUtils.uid,
         'group_no': groupNo,
       });
+      print('悟空：/group/create: response:$response');
       return response.statusCode == HttpStatus.ok;
     } catch (e) {
       print('Create group error: $e');
@@ -503,6 +504,7 @@ class WKHttpUtils {
         'login_uid': WKHttpUtils.uid,
         'name': groupName,
       });
+      print('悟空：/groups/$groupNo: response:$response');
       return response.statusCode == HttpStatus.ok;
     } catch (e) {
       print('Update group name error: $e');
