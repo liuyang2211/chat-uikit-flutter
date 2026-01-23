@@ -84,6 +84,7 @@ class WKHttpUtils {
     return '';
   }
 
+  // 同步用户会话
   static Future<void> syncConversation(String lastSsgSeqs, int msgCount,
       int version, Function(WKSyncConversation) back) async {
     try {
@@ -95,11 +96,10 @@ class WKHttpUtils {
       }
 
       final response = await dio.post('/conversation/sync', data: {
-        "login_uid": WKHttpUtils.uid,
+        "uid": WKHttpUtils.uid,
         "version": version,
         "last_msg_seqs": lastSsgSeqs,
-        "msg_count": msgCount,
-        "device_uuid": WKHttpUtils.uid,
+        "msg_count": msgCount
       });
       print('悟空：/conversation/sync: response:$response');
       WKSyncConversation conversation = WKSyncConversation();
@@ -166,6 +166,7 @@ class WKHttpUtils {
     }
   }
 
+  // 同步频道历史消息
   static syncChannelMsg(
       String channelID,
       int channelType,
@@ -175,7 +176,7 @@ class WKHttpUtils {
       int pullMode,
       Function(WKSyncChannelMsg) back) async {
     try {
-      final response = await dio.post('/message/channel/sync', data: {
+      final response = await dio.post('/channel/messagesync', data: {
         "login_uid": WKHttpUtils.uid,
         "channel_id": channelID,
         "channel_type": channelType,
@@ -184,7 +185,7 @@ class WKHttpUtils {
         "limit": limit,
         "pull_mode": pullMode
       });
-      print('悟空：/message/channel/sync: response:$response');
+      print('悟空：/channel/messagesync: response:$response');
       if (response.statusCode == HttpStatus.ok) {
         var data = response.data;
         WKSyncChannelMsg msg = WKSyncChannelMsg();

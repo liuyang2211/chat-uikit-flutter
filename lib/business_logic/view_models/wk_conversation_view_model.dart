@@ -2,7 +2,6 @@
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:tencent_cloud_chat_sdk/enum/V2TimConversationListener.dart';
 import 'package:tencent_cloud_chat_sdk/models/v2_tim_callback.dart'
     if (dart.library.html) 'package:tencent_cloud_chat_sdk/web/compatible_models/v2_tim_callback.dart';
 import 'package:tencent_cloud_chat_sdk/models/v2_tim_friend_search_param.dart'
@@ -68,9 +67,6 @@ class WKConversationViewModel extends ChangeNotifier {
 
   /// 消息服务，用于处理消息相关操作
   final MessageService _messageService = serviceLocator<MessageService>();
-
-  /// 会话监听器，用于监听会话变化事件
-  late V2TimConversationListener _conversationListener;
 
   /// 会话列表，存储当前用户的会话信息
   List<WKUIConversationMsg?> _conversationList = [];
@@ -195,60 +191,6 @@ class WKConversationViewModel extends ChangeNotifier {
   /// 获取当前选中的会话（静态方法）
   static WKUIConversationMsg? of() {
     return _selectedConversation;
-  }
-
-  /// 构造函数，初始化会话监听器
-  WKConversationViewModel() {
-    /// 添加会话列表刷新监听器
-    TencentImSDKPlugin.wukongIMManager.conversationManager
-        .addOnRefreshMsgListListener("chat_conversation",
-            (conversationList) async {
-      _onConversationListChanged(conversationList);
-      TencentImSDKPlugin.wukongIMManager.conversationManager
-          .getAllUnreadCount()
-          .then((totalUnread) {
-        _totalUnReadCount = totalUnread;
-        _chatGlobalModel.totalUnReadCount = totalUnread;
-        notifyListeners();
-      });
-    });
-
-    /// 添加会话删除监听器
-    TencentImSDKPlugin.wukongIMManager.conversationManager
-        .addOnDeleteMsgListener('chat', (channelID, channelType) {
-      _onConversationDeleted([channelID]);
-
-      _chatGlobalModel.removeMessageList(channelID);
-
-      TencentImSDKPlugin.wukongIMManager.conversationManager
-          .getAllUnreadCount()
-          .then((totalUnread) {
-        _totalUnReadCount = totalUnread;
-        _chatGlobalModel.totalUnReadCount = totalUnread;
-        notifyListeners();
-      });
-    });
-
-    /// 添加同步会话监听器
-    TencentImSDKPlugin.wukongIMManager.conversationManager
-        .addOnSyncConversationListener(
-            (lastSsgSeqs, msgCount, version, back) async {
-      await WKHttpUtils.syncConversation(lastSsgSeqs, msgCount, version, back);
-
-      // Remove the process to load such a many of conversations after launching
-      // 移除启动后加载大量会话的处理过程" 或 "移除应用启动后加载大量会话的逻辑
-      if (!PlatformUtils().isWeb) {
-        wkLoadInitConversation();
-      }
-
-      TencentImSDKPlugin.wukongIMManager.conversationManager
-          .getAllUnreadCount()
-          .then((totalUnread) {
-        _totalUnReadCount = totalUnread;
-        _chatGlobalModel.totalUnReadCount = totalUnread;
-        notifyListeners();
-      });
-    });
   }
 
   /// 加载初始会话数据
@@ -415,16 +357,77 @@ class WKConversationViewModel extends ChangeNotifier {
   //   notifyListeners();
   // }
 
-  /// 设置会话监听器
+  /// MARK: 设置会话监听器
   setWKConversationListener() {
-    _conversationService.addWKConversationListener(
-        listener: _conversationListener);
+    print('悟空：设置会话监听器');
+
+    //添加会话列表刷新监听器
+    TencentImSDKPlugin.wukongIMManager.conversationManager
+        .addOnRefreshMsgListListener("chat_conversation",
+            (conversationList) async {
+      print('悟空：接收会话监听器消息: conversationList:$conversationList');
+      _onConversationListChanged(conversationList);
+      TencentImSDKPlugin.wukongIMManager.conversationManager
+          .getAllUnreadCount()
+          .then((totalUnread) {
+        print('悟空：会话监听器获取总未读数: totalUnread:$totalUnread');
+        _totalUnReadCount = totalUnread;
+        _chatGlobalModel.totalUnReadCount = totalUnread;
+        notifyListeners();
+      });
+    });
+
+    // 添加会话删除监听器
+    TencentImSDKPlugin.wukongIMManager.conversationManager
+        .addOnDeleteMsgListener('chat', (channelID, channelType) {
+      _onConversationDeleted([channelID]);
+
+      _chatGlobalModel.removeMessageList(channelID);
+
+      TencentImSDKPlugin.wukongIMManager.conversationManager
+          .getAllUnreadCount()
+          .then((totalUnread) {
+        print('悟空：删除监听器获取总未读数: totalUnread:$totalUnread');
+        _totalUnReadCount = totalUnread;
+        _chatGlobalModel.totalUnReadCount = totalUnread;
+        notifyListeners();
+      });
+    });
+
+    // 添加同步会话监听器
+    TencentImSDKPlugin.wukongIMManager.conversationManager
+        .addOnSyncConversationListener(
+            (lastSsgSeqs, msgCount, version, back) async {
+      print(
+          '悟空：接收到同步会话监听器消息: lastSsgSeqs:$lastSsgSeqs,msgCount: $msgCount, version:$version, back:$back');
+      await WKHttpUtils.syncConversation(lastSsgSeqs, msgCount, version, back);
+
+      // Remove the process to load such a many of conversations after launching
+      // 移除启动后加载大量会话的处理过程" 或 "移除应用启动后加载大量会话的逻辑
+      if (!PlatformUtils().isWeb) {
+        wkLoadInitConversation();
+      }
+
+      TencentImSDKPlugin.wukongIMManager.conversationManager
+          .getAllUnreadCount()
+          .then((totalUnread) {
+        print('悟空：同步会话监听器获取总未读数: totalUnread:$totalUnread');
+        _totalUnReadCount = totalUnread;
+        _chatGlobalModel.totalUnReadCount = totalUnread;
+        notifyListeners();
+      });
+    });
   }
 
   /// 移除会话监听器
   removeWKConversationListener() {
-    _conversationService.removeWKConversationListener(
-        listener: _conversationListener);
+    //添加会话列表刷新监听器
+    TencentImSDKPlugin.wukongIMManager.conversationManager
+        .removeOnRefreshMsgListListener("chat_conversation");
+
+    // 添加会话删除监听器
+    TencentImSDKPlugin.wukongIMManager.conversationManager
+        .removeDeleteMsgListener('chat');
   }
 
   /// 设置会话草稿
