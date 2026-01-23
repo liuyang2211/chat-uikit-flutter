@@ -24,7 +24,6 @@ import 'package:tencent_cloud_chat_uikit/ui/utils/screen_utils.dart';
 import 'package:tencent_cloud_chat_uikit/base_widgets/tim_callback.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/listener_model/tui_group_listener_model.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/view_models/tui_chat_global_model.dart';
-import 'package:tencent_cloud_chat_uikit/business_logic/view_models/wk_conversation_view_model.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/view_models/tui_friendship_view_model.dart';
 import 'package:tencent_cloud_chat_uikit/business_logic/view_models/tui_self_info_view_model.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/core/core_services.dart';
@@ -38,9 +37,6 @@ import 'package:tencent_cloud_chat_uikit/theme/tui_theme.dart';
 import 'package:tencent_cloud_chat_uikit/theme/tui_theme_view_model.dart';
 import 'package:tencent_cloud_chat_uikit/wukong/wk_http_utils.dart';
 import 'package:tencent_cloud_chat_uikit/wukong/wk_im_utils.dart';
-
-// 使用悟空 IM SDK
-import 'package:wukongimfluttersdk/wkim.dart';
 
 typedef EmptyAvatarBuilder = Widget Function(BuildContext context);
 
@@ -62,11 +58,6 @@ class CoreServicesImpl implements CoreServices {
   ValueChanged<TIMCallback>? onCallback;
   VoidCallback? webLoginSuccess;
   bool isLoginSuccess = false;
-
-  // 悟空 IM SDK
-  late String _wkUid;
-  late String _wkToken;
-  bool wkIsLoginSuccess = false;
 
   V2TimUserFullInfo? get loginUserInfo {
     return _loginInfo;
@@ -315,39 +306,6 @@ class CoreServicesImpl implements CoreServices {
     return result;
   }
 
-  // MARK: - 悟空 IM SDK 登录
-  @override
-  Future<V2TimCallback> wkLogin(
-      {required String uid, required String token}) async {
-    _wkUid = uid;
-    _wkToken = token;
-    // 这个登录没有意义，因此注掉
-    // var status = await WKHttpUtils.login(uid, token);
-    // if (status == HttpStatus.ok) {
-    // MARK: 初始化IM
-    WKIMUtils.initIM(uid, token).then((result) {
-      if (result) {
-        if (!PlatformUtils().isWeb) {
-          wkDidLoginSuccess();
-        }
-      } else {
-        callOnCallback(TIMCallback(
-            type: TIMCallbackType.API_ERROR,
-            errorCode: 900001,
-            errorMsg: 'TUIKit WKIM SDK 初始化失败'));
-      }
-    });
-    // } else {
-    //   print('登录失败 $status');
-    //   callOnCallback(TIMCallback(
-    //       type: TIMCallbackType.API_ERROR,
-    //       errorCode: 900000,
-    //       errorMsg: 'TUIKit WKIM SDK 登录失败'));
-    // }
-
-    return V2TimCallback(code: 0, desc: 'success');
-  }
-
   void didLoginSuccess() async {
     if (isLoginSuccess == true) {
       return;
@@ -365,25 +323,6 @@ class CoreServicesImpl implements CoreServices {
     }
 
     getUsersInfoWithRetry();
-  }
-
-  void wkDidLoginSuccess() async {
-    if (wkIsLoginSuccess == true) {
-      return;
-    }
-    wkIsLoginSuccess = true;
-    addInitListener();
-    initDataModel();
-
-    // if (TencentUtils.checkString(_wkUid) == null) {
-    // V2TimValueCallback<String> getLoginUserRes =
-    //     await TencentImSDKPlugin.v2TIMManager.getLoginUser();
-    // if (getLoginUserRes.code == 0) {
-    //   _userID = getLoginUserRes.data ?? "";
-    // }
-    // }
-
-    // getUsersInfoWithRetry();
   }
 
   void getUsersInfoWithRetry() async {
@@ -428,17 +367,6 @@ class CoreServicesImpl implements CoreServices {
     clearData();
     serviceLocator<TUISelfInfoViewModel>().setLoginInfo(null);
     return result;
-  }
-
-  // MARK: - 悟空 IM SDK 登出
-  @override
-  Future<V2TimCallback> wkLogout() async {
-    // TODO: 待实现
-    wkIsLoginSuccess = false;
-    removeListener();
-    clearData();
-    serviceLocator<TUISelfInfoViewModel>().setLoginInfo(null);
-    return V2TimCallback(code: 0, desc: 'success');
   }
 
   @override

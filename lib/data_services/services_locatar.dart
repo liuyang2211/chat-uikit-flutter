@@ -11,6 +11,7 @@ import 'package:tencent_cloud_chat_uikit/data_services/conversation/conversation
 import 'package:tencent_cloud_chat_uikit/data_services/conversation/wk_conversation_services.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/conversation/wk_conversation_services_implements.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/core/core_services_implements.dart';
+import 'package:tencent_cloud_chat_uikit/data_services/core/wk_core_services_implements.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/friendShip/friendship_services.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/friendShip/friendship_services_implements.dart';
 import 'package:tencent_cloud_chat_uikit/data_services/group/group_services.dart';
@@ -57,6 +58,7 @@ void setupServiceLocator() {
 
     // MARK: 悟空
     // services
+    serviceLocator.registerSingleton<WKCoreServicesImpl>(WKCoreServicesImpl());
     serviceLocator
         .registerSingleton<WKConversationService>(WKConversationServicesImpl());
   }
